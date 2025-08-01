@@ -917,44 +917,38 @@ function clearLocalStorageForm() {
         Swal.fire({
           icon: 'info',
           title: "Kayıt Yok",
-          text: "Silinecek kayıt bulunamadı.",
-          confirmButtonText: "Tamam",
-          customClass: { popup: 'wide-popup' }
+          text: "Silinecek quiz kaydı bulunamadı.",
+          confirmButtonText: "Tamam"
         });
         return;
       }
 
-      // 🔍 SADECE 'Quiz - ' ile başlayanları filtrele
+      // 🔍 Sadece "Quiz - " ile başlayan kayıtları filtrele
       const quizKeys = Object.keys(data).filter(key => key.startsWith("Quiz - "));
 
       if (quizKeys.length === 0) {
         Swal.fire({
           icon: 'info',
-          title: "Quiz Kaydı Yok",
-          text: "Hiçbir quiz kaydı bulunamadı.",
-          confirmButtonText: "Tamam",
-          customClass: { popup: 'wide-popup' }
+          title: "Kayıt Yok",
+          text: "Silinecek herhangi bir Quiz kaydı bulunamadı.",
+          confirmButtonText: "Tamam"
         });
         return;
       }
 
       Swal.fire({
-        title: "Silinecek Quiz Kaydı Seçin",
+        title: "Silinecek Quiz kaydını seçin",
         input: "select",
         inputOptions: quizKeys.reduce((obj, key) => {
           obj[key] = key;
           return obj;
         }, {}),
-        inputPlaceholder: "Silinecek quiz kaydını seçin",
+        inputPlaceholder: "Quiz kaydı seçin",
         showCancelButton: true,
         confirmButtonText: "Sil",
         cancelButtonText: "İptal",
         showDenyButton: true,
-        denyButtonText: "🧨 Tüm Quiz Kayıtlarını Sil",
-        customClass: {
-          popup: 'wide-popup',
-          input: 'centered-select'
-        }
+        denyButtonText: "🧨 Tüm Kayıtları Sil"
       }).then(result => {
         if (result.isConfirmed) {
           const selectedKey = result.value;
@@ -963,40 +957,52 @@ function clearLocalStorageForm() {
               Swal.fire({
                 icon: 'success',
                 title: "Silindi",
-                text: `"${selectedKey}" quiz kaydı silindi.`,
-                customClass: { popup: 'wide-popup' }
+                text: `"${selectedKey}" quiz kaydı silindi.`
               });
             })
             .catch(error => {
-              console.error("Firebase silme hatası:", error);
-              Swal.fire("Hata", "Kayıt silinirken hata oluştu.", "error");
+              console.error("Silme hatası:", error);
+              Swal.fire("Hata", "Quiz kaydı silinirken bir hata oluştu.", "error");
             });
-        } else if (result.isDenied) {
-          // Tüm quiz kayıtlarını sil
-          const updates = {};
-          quizKeys.forEach(key => updates[key] = null);
 
-          database.ref('forms').update(updates)
-            .then(() => {
-              Swal.fire({
-                icon: 'success',
-                title: "Tüm Quiz Kayıtları Silindi",
-                text: "Tüm quiz formları silindi.",
-                customClass: { popup: 'wide-popup' }
+        } else if (result.isDenied) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Emin misiniz?',
+            text: 'Tüm kayıtlar silinecek!',
+            showCancelButton: true,
+            confirmButtonText: 'Evet, Hepsini Sil',
+            cancelButtonText: 'Vazgeç'
+          }).then(confirmResult => {
+            if (confirmResult.isConfirmed) {
+              const updates = {};
+              quizKeys.forEach(key => {
+                updates[`forms/${key}`] = null;
               });
-            })
-            .catch(error => {
-              console.error("Toplu silme hatası:", error);
-              Swal.fire("Hata", "Toplu silme başarısız.", "error");
-            });
+
+              database.ref().update(updates)
+                .then(() => {
+                  Swal.fire({
+                    icon: 'success',
+                    title: "Tüm Quiz Kayıtları Silindi",
+                    text: `${quizKeys.length} kayıt başarıyla silindi.`
+                  });
+                })
+                .catch(error => {
+                  console.error("Toplu silme hatası:", error);
+                  Swal.fire("Hata", "Toplu silme başarısız.", "error");
+                });
+            }
+          });
         }
       });
     })
     .catch(error => {
-      console.error("Firebase okuma hatası:", error);
-      Swal.fire("Hata", "Veriler alınamadı.", "error");
+      console.error("Veri okuma hatası:", error);
+      Swal.fire("Hata", "Kayıtlar okunamadı.", "error");
     });
 }
+
 
 
 function updateFormInLocalStorage() {
